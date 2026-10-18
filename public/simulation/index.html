@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c1b33" />
+    <title>Simulation · Deficit Sudoku</title>
+    <meta name="description" content="Run batches of Deficit Sudoku digging simulations." />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="../">Deficit Sudoku</a><div><a href="../">Generate</a><a class="active" href="./">Simulation</a></div></nav>
+    <main class="simulation-shell">
+      <section class="simulation-intro" aria-labelledby="simulation-title">
+        <p class="eyebrow">GRID LABORATORY</p>
+        <h1 id="simulation-title">Simulation</h1>
+        <p class="intro">Generate and dig many Deficit Sudoku puzzles, then inspect the distribution of their final clue counts.</p>
+        <div class="simulation-controls">
+          <label>Total trials
+            <select id="trial-count"><option value="1">1</option><option value="10">10</option><option value="100">100</option><option value="1000" selected>1,000</option><option value="10000">10,000</option><option value="100000">100,000</option><option value="1000000">1,000,000</option></select>
+          </label>
+          <label>Maximum final clues
+            <select id="clue-limit"><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12" selected>12</option><option value="13">13</option><option value="14">14</option></select>
+          </label>
+          <label>Digging method
+            <select id="digging-method"><option value="single" selected>Single-cell</option><option value="dual">Dual-cell symmetry</option></select>
+          </label>
+        </div>
+        <div class="simulation-actions"><button id="run-simulation" type="button">Run simulation <span aria-hidden="true">✦</span></button><button id="stop-simulation" class="secondary-button" type="button" disabled>Stop</button></div>
+        <p id="simulation-status" class="status" aria-live="polite">Choose settings and run a batch.</p>
+      </section>
+      <section class="results-panel" aria-label="Simulation results">
+        <div class="results-heading"><div><p class="eyebrow">LIVE RESULT</p><h2>Final-grid clue tallies</h2></div><p id="tally-summary" class="tally-summary">No grids yet</p></div>
+        <div id="histogram" class="histogram" role="img" aria-label="Histogram of final grid clue tallies"></div>
+        <p class="histogram-note">Each column shows how frequently a final grid had that many clues. Qualifying grids meet the selected clue cap.</p>
+        <div class="sample-heading"><h2>Qualifying final grids</h2><p>Latest puzzles at or below the clue cap.</p></div>
+        <div id="sample-grids" class="sample-grids" aria-live="polite"></div>
+      </section>
+    </main>
+    <footer>Deficit Sudoku · Randomized, constraint-checked puzzle research.</footer>
+    <script type="module" src="../simulation.js"></script>
+  </body>
+</html>

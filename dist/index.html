@@ -9,21 +9,32 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <nav class="site-nav" aria-label="Main navigation"><a class="site-brand" href="./">Deficit Sudoku</a><div><a class="active" href="./">Generate</a><a href="./simulation/">Simulation</a></div></nav>
     <main>
       <section class="hero" aria-labelledby="title">
         <p class="eyebrow">LOGIC LAB · 07</p>
         <h1 id="title">Deficit<br /><em>Sudoku</em></h1>
-        <p class="intro">A 7×7 Latin puzzle with nine irregular regions. Every row and column carries 1–7; within a region, no number may repeat.</p>
-        <button id="generate" type="button">Generate <span aria-hidden="true">↻</span></button>
-        <p id="status" class="status" aria-live="polite">A fresh completed grid is ready.</p>
+        <p class="intro">A 7×7 Latin puzzle with nine irregular regions. Generate a completed grid, then dig away every clue that is not needed for a unique solution.</p>
+        <div class="generation-controls"><button id="generate" type="button">Generate <span aria-hidden="true">↻</span></button><label class="digging-choice">Digging method<select id="digging-method"><option value="single" selected>Single-cell</option><option value="dual">Dual-cell symmetry</option></select></label></div>
+        <p id="status" class="status" aria-live="polite">A unique puzzle is ready.</p>
       </section>
 
-      <section class="board-area" aria-label="Completed Deficit Sudoku board">
-        <div class="board-label"><span>COMPLETED GRID</span><span>7 × 7</span></div>
-        <div id="board" class="board" role="grid" aria-label="Deficit Sudoku solution"></div>
+      <section class="board-area" aria-label="Deficit Sudoku boards">
+        <div class="boards">
+          <article class="board-card">
+            <div class="board-label"><span>FINAL GRID</span><span id="clue-count">— CLUES</span></div>
+            <div id="final-board" class="board" role="grid" aria-label="Final Deficit Sudoku puzzle"></div>
+          </article>
+          <article class="board-card">
+            <div class="board-label"><span>COMPLETED GRID</span><span>7 × 7</span></div>
+            <div id="completed-board" class="board" role="grid" aria-label="Completed Deficit Sudoku solution"></div>
+          </article>
+        </div>
+        <p id="timing" class="timing">Digging time: —</p>
         <div class="legend">
           <span><i class="dot navy"></i> Region boundary</span>
-          <span><i class="dot coral"></i> Generated solution</span>
+          <span><i class="dot black"></i> Final-grid clue</span>
+          <span><i class="dot blue"></i> Dug cell</span>
         </div>
       </section>
     </main>
