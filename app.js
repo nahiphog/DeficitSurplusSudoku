@@ -61,7 +61,9 @@ if (variant === 'deficit2') {
   document.querySelector('#completed-dimensions').textContent = '6 × 6';
   finalBoard.setAttribute('aria-label', 'Final Deficit Sudoku V2 puzzle');
   completedBoard.setAttribute('aria-label', 'Completed Deficit Sudoku V2 solution');
-  versionSelect.value = '2';
+  if (versionSelect) versionSelect.value = '2';
+  document.querySelector('#version-1')?.classList.remove('active');
+  document.querySelector('#version-2')?.classList.add('active');
 }
 
 function shuffled(items) {
