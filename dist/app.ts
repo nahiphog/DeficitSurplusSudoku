@@ -1,4 +1,5 @@
-const variant = document.body.dataset.variant ?? 'deficit';
+const requestedVersion = new URLSearchParams(window.location.search).get('version');
+const variant = document.body.dataset.variant === 'deficit' && requestedVersion === '2' ? 'deficit2' : (document.body.dataset.variant ?? 'deficit');
 
 const variants = {
   deficit: {
@@ -7,6 +8,21 @@ const variants = {
     numbers: [1, 2, 3, 4, 5, 6, 7],
     regions: [[1,1,2,2,3,3,3],[1,1,2,2,3,3,3],[1,1,2,2,4,4,4],[5,5,5,9,4,4,4],[5,5,5,7,7,8,8],[6,6,6,7,7,8,8],[6,6,6,7,7,8,8]],
     generate() { return solveCompleted(this); },
+    requiresRegionCoverage: false,
+    maxPerUnit: 1,
+  },
+  deficit2: {
+    name: 'Deficit Sudoku V2',
+    size: 6,
+    numbers: [1, 2, 3, 4, 5, 6, 7],
+    regions: Array.from({ length: 6 }, (_, row) => Array.from({ length: 6 }, (_, col) => Math.floor(row / 2) * 2 + Math.floor(col / 3) + 1)),
+    generate() {
+      const shifts = [0, 3, 1, 4, 2, 5];
+      const rowBands = shuffled([[0, 1], [2, 3], [4, 5]]).flatMap(shuffled);
+      const colStacks = shuffled([[0, 1, 2], [3, 4, 5]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rowBands.map(row => colStacks.map(col => digits[(col + shifts[row]) % 7]));
+    },
     requiresRegionCoverage: false,
     maxPerUnit: 1,
   },
@@ -35,6 +51,18 @@ const status = document.querySelector('#status');
 const clueCount = document.querySelector('#clue-count');
 const timing = document.querySelector('#timing');
 const diggingMethod = document.querySelector('#digging-method');
+const versionSelect = document.querySelector('#deficit-version');
+
+if (variant === 'deficit2') {
+  document.title = 'Generate · Deficit Sudoku V2';
+  document.querySelector('#version-eyebrow').textContent = 'DEFICIT V2 · 06 × 06';
+  document.querySelector('#title').innerHTML = 'Deficit<br /><em>Sudoku V2</em>';
+  document.querySelector('#variant-intro').textContent = 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.';
+  document.querySelector('#completed-dimensions').textContent = '6 × 6';
+  finalBoard.setAttribute('aria-label', 'Final Deficit Sudoku V2 puzzle');
+  completedBoard.setAttribute('aria-label', 'Completed Deficit Sudoku V2 solution');
+  versionSelect.value = '2';
+}
 
 function shuffled(items) {
   const copy = [...items];
@@ -198,4 +226,9 @@ function refresh() {
 }
 
 button.addEventListener('click', refresh);
+versionSelect?.addEventListener('change', () => {
+  const url = new URL(window.location.href);
+  if (versionSelect.value === '2') url.searchParams.set('version', '2'); else url.searchParams.delete('version');
+  window.location.assign(url);
+});
 refresh();
