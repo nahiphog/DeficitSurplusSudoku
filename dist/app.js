@@ -1,5 +1,6 @@
 const requestedVersion = new URLSearchParams(window.location.search).get('version');
-const variant = document.body.dataset.variant === 'deficit' && ['2', '3', '4'].includes(requestedVersion) ? `deficit${requestedVersion}` : (document.body.dataset.variant ?? 'deficit');
+const baseVariant = document.body.dataset.variant ?? 'deficit';
+const variant = baseVariant === 'deficit' && ['2', '3', '4'].includes(requestedVersion) ? `deficit${requestedVersion}` : baseVariant === 'surplus' && requestedVersion === '2' ? 'surplus2' : baseVariant;
 
 const variants = {
   deficit: {
@@ -50,6 +51,18 @@ const variants = {
     },
     requiresRegionCoverage: false, maxPerUnit: 1,
   },
+  surplus2: {
+    name: 'Surplus Sudoku V2', size: 9, numbers: [1,2,3,4,5,6,7,8],
+    regions: Array.from({length:9}, (_, row) => Array.from({length:9}, (_, col) => Math.floor(row / 3) * 3 + Math.floor(col / 3) + 1)),
+    generate() {
+      const shifts = [0,3,6,1,4,7,2,5,8];
+      const rows = shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled);
+      const cols = shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 8]));
+    },
+    requiresRegionCoverage: true, maxPerUnit: 2,
+  },
   surplus: {
     name: 'Surplus Sudoku',
     size: 8,
@@ -91,6 +104,18 @@ if (['deficit2', 'deficit3', 'deficit4'].includes(variant)) {
   document.querySelector(`#version-${version}`)?.classList.add('active');
 }
 
+if (variant === 'surplus2') {
+  document.title = 'Generate · Surplus Sudoku V2';
+  document.querySelector('#version-eyebrow').textContent = 'SURPLUS V2 · 09 × 09';
+  document.querySelector('#title').innerHTML = 'Surplus<br /><em>Sudoku V2</em>';
+  document.querySelector('#variant-intro').textContent = 'A 9×9 grid with nine 3×3 regions. Each row, column, and region contains every digit from 1–8 at least once.';
+  document.querySelector('#completed-dimensions').textContent = '9 × 9';
+  finalBoard.setAttribute('aria-label', 'Final Surplus Sudoku V2 puzzle');
+  completedBoard.setAttribute('aria-label', 'Completed Surplus Sudoku V2 solution');
+  document.querySelector('#version-1')?.classList.remove('active');
+  document.querySelector('#version-2')?.classList.add('active');
+}
+
 function shuffled(items) {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -119,7 +144,7 @@ function makeUnitState(grid, validatePuzzle) {
       if (value !== null && idsFor(row, col).some(id => (counts[id].get(value) ?? 0) > config.maxPerUnit)) return null;
     }
   }
-  const unitLength = id => id >= size * 2 ? (size === 8 ? 8 : counts.length === 23 && id === 22 ? 1 : 6) : size;
+  const unitLength = id => id >= size * 2 ? regions.flat().filter(region => region === id - size * 2 + 1).length : size;
   return {
     filled,
     allowed: (row, col, value) => idsFor(row, col).every(id => (counts[id].get(value) ?? 0) < config.maxPerUnit),
@@ -198,7 +223,7 @@ function digSingle(completed) {
   // Surplus Sudoku's permissive units create a much wider solution space than
   // a Latin square. A focused pass keeps interaction responsive while each
   // removed clue is still verified with the same unique-solution solver.
-  for (const index of variant === 'surplus' ? cells.slice(0, 12) : cells) {
+  for (const index of baseVariant === 'surplus' ? cells.slice(0, 12) : cells) {
     const row = Math.floor(index / config.size); const col = index % config.size;
     const saved = puzzle[row][col]; puzzle[row][col] = null;
     if (countSolutions(puzzle) !== 1) puzzle[row][col] = saved;
@@ -209,7 +234,7 @@ function digSingle(completed) {
 function digDual(completed) {
   const puzzle = completed.map(row => [...row]); const visited = new Set();
   const cells = shuffled(Array.from({ length: config.size ** 2 }, (_, i) => i));
-  for (const index of variant === 'surplus' ? cells.slice(0, 12) : cells) {
+  for (const index of baseVariant === 'surplus' ? cells.slice(0, 12) : cells) {
     const row = Math.floor(index / config.size); const col = index % config.size;
     const pairedRow = config.size - 1 - row; const pairedCol = config.size - 1 - col;
     const key = [`${row}:${col}`, `${pairedRow}:${pairedCol}`].sort().join('|');
@@ -237,11 +262,22 @@ function draw(targetBoard, grid, isFinal, finalGrid = null) {
   }
 }
 
+let currentFinal = null, currentCompleted = null;
+function gridString(grid) { return grid.flat().map(value => value === null ? '.' : String(value)).join(''); }
+async function copyGrid(grid, label) {
+  if (!grid) return;
+  try { await navigator.clipboard.writeText(gridString(grid)); status.textContent = `${label} copied to clipboard.`; }
+  catch { status.textContent = 'Clipboard access failed. Please allow clipboard access and try again.'; }
+}
+document.querySelector('#copy-final')?.addEventListener('click', () => copyGrid(currentFinal, 'Final grid'));
+document.querySelector('#copy-completed')?.addEventListener('click', () => copyGrid(currentCompleted, 'Completed grid'));
+
 function refresh() {
   button.disabled = true; status.textContent = 'Searching the constraint space…';
   requestAnimationFrame(() => {
     const startedAt = performance.now(); const completed = config.generate();
     const method = diggingMethod.value; const final = method === 'dual' ? digDual(completed) : digSingle(completed);
+    currentFinal = final; currentCompleted = completed;
     const elapsed = performance.now() - startedAt;
     draw(finalBoard, final, true); draw(completedBoard, completed, false, final);
     const clues = final.flat().filter(value => value !== null).length;

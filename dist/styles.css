@@ -32,6 +32,8 @@ button:focus-visible { outline:3px solid var(--coral); outline-offset:4px; }
 .cell.edge-right { border-right:3px solid var(--line); }
 .cell.edge-bottom { border-bottom:3px solid var(--line); }
 .timing { margin:22px 0 0; color:var(--coral); font:500 11px 'DM Mono',monospace; letter-spacing:.04em; }
+.copy-button { margin-top:12px; padding:8px 10px; background:transparent; color:var(--ink); border:1px solid var(--ink); box-shadow:none; font:500 11px 'DM Sans',sans-serif; }
+.copy-button:hover { background:var(--ink); color:var(--cream); transform:none; box-shadow:none; }
 .legend { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:11px; margin-top:10px; }
 .dot { display:inline-block; width:8px; height:8px; margin-right:5px; vertical-align:1px; }.navy{background:var(--ink)}.black{background:#111}.blue{background:#2474b7}
 footer { border-top:1px solid #d8d0c2; padding:16px 24px; text-align:center; color:var(--muted); font:11px 'DM Mono',monospace; }
