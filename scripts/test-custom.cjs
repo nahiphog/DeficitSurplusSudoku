@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const sandbox = { Math, self: { postMessage(message) { sandbox.messages.push(message); } }, messages: [] };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync('src/custom-worker.ts', 'utf8'), sandbox);
-for (const variant of ['deficit','deficit2','deficit3','deficit4','surplus','surplus2','surplus3']) {
+for (const variant of ['deficit','deficit2','deficit3','deficit4','deficit5','surplus','surplus2','surplus3']) {
   sandbox.variant = variant;
   vm.runInContext('var cfg = configs[variant]; var board = completed(cfg);', sandbox);
   assert.equal(vm.runInContext('solve(board, cfg, 2).length', sandbox), 1, `${variant} completed grid`);

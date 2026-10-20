@@ -52,8 +52,8 @@ function validate(grid, size, regionWidth, digits, minimum = 1) {
   const regionHeight = size / regionWidth;
   if (regionWidth) for (let r = 0; r < size; r += regionHeight) for (let c = 0; c < size; c += regionWidth) distinct(grid.slice(r, r + regionHeight).flatMap(row => row.slice(c, c + regionWidth)));
 }
-for (const version of [1, 2, 3, 4]) {
-  const size = [0, 7, 6, 8, 9][version], width = [0, 0, 3, 4, 3][version], digits = version >= 3 ? 9 : 7;
+for (const version of [1, 2, 3, 4, 5]) {
+  const size = [0, 7, 6, 8, 9, 4][version], width = [0, 0, 3, 4, 3, 2][version], digits = version === 5 ? 5 : version >= 3 ? 9 : 7;
   for (const simulation of [false, true]) {
     const ctx = context(simulation ? 'src/simulation.ts' : 'src/app.ts', version, simulation);
     const board = vm.runInContext(simulation ? 'completedGrid()' : 'config.generate()', ctx);

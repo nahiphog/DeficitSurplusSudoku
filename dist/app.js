@@ -1,6 +1,6 @@
 const requestedVersion = new URLSearchParams(window.location.search).get('version');
 const baseVariant = document.body.dataset.variant ?? 'deficit';
-const variant = baseVariant === 'deficit' && ['2', '3', '4'].includes(requestedVersion) ? `deficit${requestedVersion}` : baseVariant === 'surplus' && ['2', '3'].includes(requestedVersion) ? `surplus${requestedVersion}` : baseVariant;
+const variant = baseVariant === 'deficit' && ['2', '3', '4', '5'].includes(requestedVersion) ? `deficit${requestedVersion}` : baseVariant === 'surplus' && ['2', '3'].includes(requestedVersion) ? `surplus${requestedVersion}` : baseVariant;
 
 const variants = {
   deficit: {
@@ -36,6 +36,18 @@ const variants = {
       const cols = shuffled([[0,1,2,3],[4,5,6,7]]).flatMap(shuffled);
       const digits = shuffled(this.numbers);
       return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 9]));
+    },
+    requiresRegionCoverage: false, maxPerUnit: 1,
+  },
+  deficit5: {
+    name: 'Deficit Sudoku V5', size: 4, numbers: [1,2,3,4,5],
+    regions: Array.from({length:4}, (_, row) => Array.from({length:4}, (_, col) => Math.floor(row / 2) * 2 + Math.floor(col / 2) + 1)),
+    generate() {
+      const shifts = [0,2,1,3];
+      const rows = shuffled([[0,1],[2,3]]).flatMap(shuffled);
+      const cols = shuffled([[0,1],[2,3]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 5]));
     },
     requiresRegionCoverage: false, maxPerUnit: 1,
   },
@@ -102,12 +114,12 @@ const timing = document.querySelector('#timing');
 const diggingMethod = document.querySelector('#digging-method');
 const versionSelect = document.querySelector('#deficit-version');
 
-if (['deficit2', 'deficit3', 'deficit4'].includes(variant)) {
+if (['deficit2', 'deficit3', 'deficit4', 'deficit5'].includes(variant)) {
   const version = variant.slice(-1);
   document.title = `Generate · Deficit Sudoku V${version}`;
   document.querySelector('#version-eyebrow').textContent = `DEFICIT V${version} · 0${config.size} × 0${config.size}`;
   document.querySelector('#title').innerHTML = `Deficit<br /><em>Sudoku V${version}</em>`;
-  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.' : version === '3' ? 'An 8×8 grid with eight outlined 2×4 regions. Choose digits 1–9 so every row, column, and region has no repeated digit.' : 'A 9×9 grid with nine outlined 3×3 regions. Choose digits 0–9 so every row, column, and region has no repeated digit.';
+  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.' : version === '3' ? 'An 8×8 grid with eight outlined 2×4 regions. Choose digits 1–9 so every row, column, and region has no repeated digit.' : version === '4' ? 'A 9×9 grid with nine outlined 3×3 regions. Choose digits 0–9 so every row, column, and region has no repeated digit.' : 'A 4×4 grid with four outlined 2×2 regions. Choose digits 1–5 so every row, column, and region has no repeated digit.';
   document.querySelector('#completed-dimensions').textContent = `${config.size} × ${config.size}`;
   finalBoard.setAttribute('aria-label', `Final Deficit Sudoku V${version} puzzle`);
   completedBoard.setAttribute('aria-label', `Completed Deficit Sudoku V${version} solution`);

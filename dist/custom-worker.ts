@@ -4,6 +4,7 @@ const configs = {
   deficit2: [6, [1,2,3,4,5,6,7], regions(6,2,3), false],
   deficit3: [8, [1,2,3,4,5,6,7,8,9], regions(8,2,4), false],
   deficit4: [9, [0,1,2,3,4,5,6,7,8,9], regions(9,3,3), false],
+  deficit5: [4, [1,2,3,4,5], regions(4,2,2), false],
   surplus: [8, [1,2,3,4,5,6,7], regions(8,2,4), true],
   surplus2: [9, [1,2,3,4,5,6,7,8], regions(9,3,3), true],
   surplus3: [6, [1,2,3,4,5], regions(6,2,3), true],
@@ -32,7 +33,7 @@ function solve(puzzle, cfg, limit, randomize = false) {
 function completed(cfg) {
   const [size,numbers]=cfg;
   if(size===7)return solve(Array.from({length:7},()=>Array(7).fill(null)),cfg,1,true)[0];
-  const h=size===9?3:2,w=size/h,shifts=size===9?[0,3,6,1,4,7,2,5,8]:size===8?[0,4,1,5,2,6,3,7]:[0,3,1,4,2,5];
+  const h=size===9?3:2,w=size/h,shifts=size===9?[0,3,6,1,4,7,2,5,8]:size===8?[0,4,1,5,2,6,3,7]:size===4?[0,2,1,3]:[0,3,1,4,2,5];
   const rows=shuffle(Array.from({length:size/h},(_,i)=>Array.from({length:h},(_,j)=>i*h+j))).flatMap(shuffle);
   const cols=shuffle(Array.from({length:size/w},(_,i)=>Array.from({length:w},(_,j)=>i*w+j))).flatMap(shuffle), digits=shuffle(numbers);
   return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%digits.length]));
