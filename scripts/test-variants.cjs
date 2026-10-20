@@ -28,6 +28,22 @@ for (const simulation of [false, true]) {
   if (!simulation) assert.equal(vm.runInContext('gridString([[0,null,2],[3,4,5]])',ctx), '0.2345');
   console.log(`Surplus V2 ${simulation ? 'simulation' : 'generation'}: valid and unique`);
 }
+for (const simulation of [false, true]) {
+  const ctx = context(simulation ? 'src/simulation.ts' : 'src/app.ts', 3, simulation, 'surplus');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const grid = vm.runInContext(simulation ? 'completedGrid()' : 'config.generate()', ctx);
+    const units = [...grid, ...Array.from({length:6}, (_,c)=>grid.map(row=>row[c]))];
+    for(let r=0;r<6;r+=2) for(let c=0;c<6;c+=3) units.push(grid.slice(r,r+2).flatMap(row=>row.slice(c,c+3)));
+    for(const unit of units) assert.deepEqual([...new Set(unit)].sort(), [1,2,3,4,5]);
+    ctx.board = grid;
+    assert.equal(vm.runInContext('countSolutions(board)', ctx), 1);
+    for(const method of ['digSingle','digDual']) {
+      ctx.puzzle = vm.runInContext(`${method}(board.map(row => [...row]))`, ctx);
+      assert.equal(vm.runInContext('countSolutions(puzzle)', ctx), 1);
+    }
+  }
+  console.log(`Surplus V3 ${simulation ? 'simulation' : 'generation'}: valid and unique`);
+}
 function validate(grid, size, regionWidth, digits, minimum = 1) {
   assert.equal(grid.length, size);
   const distinct = values => { assert.equal(values.length, size); assert.equal(new Set(values).size, size); assert.ok(values.every(v => v >= minimum && v <= digits)); };

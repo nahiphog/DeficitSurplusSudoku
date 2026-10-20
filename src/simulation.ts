@@ -3,6 +3,7 @@ const versionSelect = document.querySelector('#deficit-version') || document.que
 const configurations = {
   surplus: { size: 8, numbers: [1,2,3,4,5,6,7], regions: Array.from({length:8},(_,r)=>Array.from({length:8},(_,c)=>Math.floor(r/2)*2+Math.floor(c/4)+1)), limit: 2, coverRegions: true },
   surplus2: { size: 9, numbers: [1,2,3,4,5,6,7,8], regions: Array.from({length:9},(_,r)=>Array.from({length:9},(_,c)=>Math.floor(r/3)*3+Math.floor(c/3)+1)), limit: 2, coverRegions: true },
+  surplus3: { size: 6, numbers: [1,2,3,4,5], regions: Array.from({length:6},(_,r)=>Array.from({length:6},(_,c)=>Math.floor(r/2)*2+Math.floor(c/3)+1)), limit: 2, coverRegions: true },
   deficit: { size: 7, numbers: [1,2,3,4,5,6,7], regions: [[1,1,2,2,3,3,3],[1,1,2,2,3,3,3],[1,1,2,2,4,4,4],[5,5,5,9,4,4,4],[5,5,5,7,7,8,8],[6,6,6,7,7,8,8],[6,6,6,7,7,8,8]], limit: 1, coverRegions: false },
   deficit2: {size:6, numbers:[1,2,3,4,5,6,7], regions:Array.from({length:6},(_,r)=>Array.from({length:6},(_,c)=>Math.floor(r/2)*2+Math.floor(c/3)+1)), limit:1, coverRegions:false},
   deficit3: {size:8, numbers:[1,2,3,4,5,6,7,8,9], regions:Array.from({length:8},(_,r)=>Array.from({length:8},(_,c)=>Math.floor(r/2)*2+Math.floor(c/4)+1)), limit:1, coverRegions:false},
