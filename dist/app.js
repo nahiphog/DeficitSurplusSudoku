@@ -1,5 +1,5 @@
 const requestedVersion = new URLSearchParams(window.location.search).get('version');
-const variant = document.body.dataset.variant === 'deficit' && ['2', '3'].includes(requestedVersion) ? `deficit${requestedVersion}` : (document.body.dataset.variant ?? 'deficit');
+const variant = document.body.dataset.variant === 'deficit' && ['2', '3', '4'].includes(requestedVersion) ? `deficit${requestedVersion}` : (document.body.dataset.variant ?? 'deficit');
 
 const variants = {
   deficit: {
@@ -38,6 +38,18 @@ const variants = {
     },
     requiresRegionCoverage: false, maxPerUnit: 1,
   },
+  deficit4: {
+    name: 'Deficit Sudoku V4', size: 9, numbers: [0,1,2,3,4,5,6,7,8,9],
+    regions: Array.from({length:9}, (_, row) => Array.from({length:9}, (_, col) => Math.floor(row / 3) * 3 + Math.floor(col / 3) + 1)),
+    generate() {
+      const shifts = [0,3,6,1,4,7,2,5,8];
+      const rows = shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled);
+      const cols = shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 10]));
+    },
+    requiresRegionCoverage: false, maxPerUnit: 1,
+  },
   surplus: {
     name: 'Surplus Sudoku',
     size: 8,
@@ -65,12 +77,12 @@ const timing = document.querySelector('#timing');
 const diggingMethod = document.querySelector('#digging-method');
 const versionSelect = document.querySelector('#deficit-version');
 
-if (variant === 'deficit2' || variant === 'deficit3') {
-  const version = variant === 'deficit2' ? '2' : '3';
+if (['deficit2', 'deficit3', 'deficit4'].includes(variant)) {
+  const version = variant.slice(-1);
   document.title = `Generate · Deficit Sudoku V${version}`;
   document.querySelector('#version-eyebrow').textContent = `DEFICIT V${version} · 0${config.size} × 0${config.size}`;
   document.querySelector('#title').innerHTML = `Deficit<br /><em>Sudoku V${version}</em>`;
-  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.' : 'An 8×8 grid with eight outlined 2×4 regions. Choose digits 1–9 so every row, column, and region has no repeated digit.';
+  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.' : version === '3' ? 'An 8×8 grid with eight outlined 2×4 regions. Choose digits 1–9 so every row, column, and region has no repeated digit.' : 'A 9×9 grid with nine outlined 3×3 regions. Choose digits 0–9 so every row, column, and region has no repeated digit.';
   document.querySelector('#completed-dimensions').textContent = `${config.size} × ${config.size}`;
   finalBoard.setAttribute('aria-label', `Final Deficit Sudoku V${version} puzzle`);
   completedBoard.setAttribute('aria-label', `Completed Deficit Sudoku V${version} solution`);
@@ -95,7 +107,7 @@ function makeUnitState(grid, validatePuzzle) {
   let filled = 0;
   for (let row = 0; row < size; row += 1) for (let col = 0; col < size; col += 1) {
     const value = grid[row][col];
-    if (!value) continue;
+    if (value === null) continue;
     const ids = [row, size + col, size * 2 + regions[row][col] - 1];
     for (const id of ids) counts[id].set(value, (counts[id].get(value) ?? 0) + 1);
     filled += 1;
@@ -104,7 +116,7 @@ function makeUnitState(grid, validatePuzzle) {
   if (validatePuzzle) {
     for (let row = 0; row < size; row += 1) for (let col = 0; col < size; col += 1) {
       const value = grid[row][col];
-      if (value && idsFor(row, col).some(id => (counts[id].get(value) ?? 0) > config.maxPerUnit)) return null;
+      if (value !== null && idsFor(row, col).some(id => (counts[id].get(value) ?? 0) > config.maxPerUnit)) return null;
     }
   }
   const unitLength = id => id >= size * 2 ? (size === 8 ? 8 : counts.length === 23 && id === 22 ? 1 : 6) : size;
@@ -112,7 +124,7 @@ function makeUnitState(grid, validatePuzzle) {
     filled,
     allowed: (row, col, value) => idsFor(row, col).every(id => (counts[id].get(value) ?? 0) < config.maxPerUnit),
     set: (row, col, value, direction) => {
-      grid[row][col] = direction > 0 ? value : 0;
+      grid[row][col] = direction > 0 ? value : null;
       for (const id of idsFor(row, col)) {
         const next = (counts[id].get(value) ?? 0) + direction;
         if (next) counts[id].set(value, next); else counts[id].delete(value);
@@ -128,13 +140,13 @@ function makeUnitState(grid, validatePuzzle) {
 }
 
 function solveCompleted(deficitConfig) {
-  const grid = Array.from({ length: deficitConfig.size }, () => Array(deficitConfig.size).fill(0));
+  const grid = Array.from({ length: deficitConfig.size }, () => Array(deficitConfig.size).fill(null));
   const state = makeUnitState(grid, false);
   function search(filled) {
     if (filled === deficitConfig.size * deficitConfig.size) return true;
     let target; let options = [];
     for (let row = 0; row < deficitConfig.size; row += 1) for (let col = 0; col < deficitConfig.size; col += 1) {
-      if (grid[row][col]) continue;
+      if (grid[row][col] !== null) continue;
       const choices = shuffled(deficitConfig.numbers.filter(value => state.allowed(row, col, value)));
       if (!target || choices.length < options.length) { target = [row, col]; options = choices; }
       if (options.length <= 1) break;
@@ -162,7 +174,7 @@ function countSolutions(puzzle, limit = 2) {
     if (filled === config.size ** 2) { if (state.coversAll()) solutions += 1; return; }
     let target; let options = [];
     for (let row = 0; row < config.size; row += 1) for (let col = 0; col < config.size; col += 1) {
-      if (grid[row][col]) continue;
+      if (grid[row][col] !== null) continue;
       const choices = config.numbers.filter(value => state.allowed(row, col, value));
       if (!target || choices.length < options.length) { target = [row, col]; options = choices; }
       if (options.length <= 1) break;
@@ -188,7 +200,7 @@ function digSingle(completed) {
   // removed clue is still verified with the same unique-solution solver.
   for (const index of variant === 'surplus' ? cells.slice(0, 12) : cells) {
     const row = Math.floor(index / config.size); const col = index % config.size;
-    const saved = puzzle[row][col]; puzzle[row][col] = 0;
+    const saved = puzzle[row][col]; puzzle[row][col] = null;
     if (countSolutions(puzzle) !== 1) puzzle[row][col] = saved;
   }
   return puzzle;
@@ -204,7 +216,7 @@ function digDual(completed) {
     if (visited.has(key)) continue;
     visited.add(key);
     const first = puzzle[row][col]; const second = puzzle[pairedRow][pairedCol];
-    puzzle[row][col] = 0; puzzle[pairedRow][pairedCol] = 0;
+    puzzle[row][col] = null; puzzle[pairedRow][pairedCol] = null;
     if (countSolutions(puzzle) !== 1) { puzzle[row][col] = first; puzzle[pairedRow][pairedCol] = second; }
   }
   return puzzle;
@@ -217,10 +229,10 @@ function draw(targetBoard, grid, isFinal, finalGrid = null) {
     const right = col === config.size - 1 || config.regions[row][col + 1] !== current;
     const bottom = row === config.size - 1 || config.regions[row + 1][col] !== current;
     const cell = document.createElement('div'); const value = grid[row][col];
-    const completedColor = !isFinal && value ? (finalGrid[row][col] ? 'completed-clue' : 'completed-dug') : '';
-    cell.className = `cell ${!value ? 'empty' : ''} ${completedColor} ${right ? 'edge-right' : ''} ${bottom ? 'edge-bottom' : ''}`;
-    cell.textContent = value ? String(value) : '·'; cell.style.animationDelay = `${(row * config.size + col) * 8}ms`;
-    cell.setAttribute('role', 'gridcell'); cell.setAttribute('aria-label', `Row ${row + 1}, column ${col + 1}: ${value || 'empty'}`);
+    const completedColor = !isFinal && value !== null ? (finalGrid[row][col] !== null ? 'completed-clue' : 'completed-dug') : '';
+    cell.className = `cell ${value === null ? 'empty' : ''} ${completedColor} ${right ? 'edge-right' : ''} ${bottom ? 'edge-bottom' : ''}`;
+    cell.textContent = value === null ? '·' : String(value); cell.style.animationDelay = `${(row * config.size + col) * 8}ms`;
+    cell.setAttribute('role', 'gridcell'); cell.setAttribute('aria-label', `Row ${row + 1}, column ${col + 1}: ${value === null ? 'empty' : value}`);
     targetBoard.append(cell);
   }
 }
@@ -232,7 +244,7 @@ function refresh() {
     const method = diggingMethod.value; const final = method === 'dual' ? digDual(completed) : digSingle(completed);
     const elapsed = performance.now() - startedAt;
     draw(finalBoard, final, true); draw(completedBoard, completed, false, final);
-    const clues = final.flat().filter(Boolean).length;
+    const clues = final.flat().filter(value => value !== null).length;
     clueCount.textContent = `${clues} CLUES`;
     timing.textContent = `Generated and ${method === 'dual' ? 'dual-cell' : 'single-cell'} dug in ${elapsed.toFixed(1)} ms`;
     status.textContent = `Ready — ${method === 'dual' ? 'rotationally symmetric ' : ''}final grid has ${clues} clues and one solution.`;
