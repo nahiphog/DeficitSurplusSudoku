@@ -8,3 +8,5 @@ await cp('public', 'dist', { recursive: true });
 // be copied as the module consumed by this dependency-free static site.
 await cp('src/app.ts', 'dist/app.js');
 await cp('src/simulation.ts', 'dist/simulation.js');
+await cp('src/custom.ts', 'dist/custom.js');
+await cp('src/custom-worker.ts', 'dist/custom-worker.js');
