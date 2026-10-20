@@ -1,5 +1,5 @@
 const requestedVersion = new URLSearchParams(window.location.search).get('version');
-const variant = document.body.dataset.variant === 'deficit' && requestedVersion === '2' ? 'deficit2' : (document.body.dataset.variant ?? 'deficit');
+const variant = document.body.dataset.variant === 'deficit' && ['2', '3'].includes(requestedVersion) ? `deficit${requestedVersion}` : (document.body.dataset.variant ?? 'deficit');
 
 const variants = {
   deficit: {
@@ -25,6 +25,18 @@ const variants = {
     },
     requiresRegionCoverage: false,
     maxPerUnit: 1,
+  },
+  deficit3: {
+    name: 'Deficit Sudoku V3', size: 8, numbers: [1,2,3,4,5,6,7,8,9],
+    regions: Array.from({ length: 8 }, (_, row) => Array.from({ length: 8 }, (_, col) => Math.floor(row / 2) * 2 + Math.floor(col / 4) + 1)),
+    generate() {
+      const shifts = [0,4,1,5,2,6,3,7];
+      const rows = shuffled([[0,1],[2,3],[4,5],[6,7]]).flatMap(shuffled);
+      const cols = shuffled([[0,1,2,3],[4,5,6,7]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 9]));
+    },
+    requiresRegionCoverage: false, maxPerUnit: 1,
   },
   surplus: {
     name: 'Surplus Sudoku',
@@ -53,17 +65,18 @@ const timing = document.querySelector('#timing');
 const diggingMethod = document.querySelector('#digging-method');
 const versionSelect = document.querySelector('#deficit-version');
 
-if (variant === 'deficit2') {
-  document.title = 'Generate · Deficit Sudoku V2';
-  document.querySelector('#version-eyebrow').textContent = 'DEFICIT V2 · 06 × 06';
-  document.querySelector('#title').innerHTML = 'Deficit<br /><em>Sudoku V2</em>';
-  document.querySelector('#variant-intro').textContent = 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.';
-  document.querySelector('#completed-dimensions').textContent = '6 × 6';
-  finalBoard.setAttribute('aria-label', 'Final Deficit Sudoku V2 puzzle');
-  completedBoard.setAttribute('aria-label', 'Completed Deficit Sudoku V2 solution');
-  if (versionSelect) versionSelect.value = '2';
+if (variant === 'deficit2' || variant === 'deficit3') {
+  const version = variant === 'deficit2' ? '2' : '3';
+  document.title = `Generate · Deficit Sudoku V${version}`;
+  document.querySelector('#version-eyebrow').textContent = `DEFICIT V${version} · 0${config.size} × 0${config.size}`;
+  document.querySelector('#title').innerHTML = `Deficit<br /><em>Sudoku V${version}</em>`;
+  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 6×6 grid with six outlined 2×3 regions. Choose digits 1–7 so every row, column, and region has no repeated digit.' : 'An 8×8 grid with eight outlined 2×4 regions. Choose digits 1–9 so every row, column, and region has no repeated digit.';
+  document.querySelector('#completed-dimensions').textContent = `${config.size} × ${config.size}`;
+  finalBoard.setAttribute('aria-label', `Final Deficit Sudoku V${version} puzzle`);
+  completedBoard.setAttribute('aria-label', `Completed Deficit Sudoku V${version} solution`);
+  if (versionSelect) versionSelect.value = version;
   document.querySelector('#version-1')?.classList.remove('active');
-  document.querySelector('#version-2')?.classList.add('active');
+  document.querySelector(`#version-${version}`)?.classList.add('active');
 }
 
 function shuffled(items) {
@@ -173,7 +186,7 @@ function digSingle(completed) {
   // Surplus Sudoku's permissive units create a much wider solution space than
   // a Latin square. A focused pass keeps interaction responsive while each
   // removed clue is still verified with the same unique-solution solver.
-  for (const index of config.size === 8 ? cells.slice(0, 12) : cells) {
+  for (const index of variant === 'surplus' ? cells.slice(0, 12) : cells) {
     const row = Math.floor(index / config.size); const col = index % config.size;
     const saved = puzzle[row][col]; puzzle[row][col] = 0;
     if (countSolutions(puzzle) !== 1) puzzle[row][col] = saved;
@@ -184,7 +197,7 @@ function digSingle(completed) {
 function digDual(completed) {
   const puzzle = completed.map(row => [...row]); const visited = new Set();
   const cells = shuffled(Array.from({ length: config.size ** 2 }, (_, i) => i));
-  for (const index of config.size === 8 ? cells.slice(0, 12) : cells) {
+  for (const index of variant === 'surplus' ? cells.slice(0, 12) : cells) {
     const row = Math.floor(index / config.size); const col = index % config.size;
     const pairedRow = config.size - 1 - row; const pairedCol = config.size - 1 - col;
     const key = [`${row}:${col}`, `${pairedRow}:${pairedCol}`].sort().join('|');
