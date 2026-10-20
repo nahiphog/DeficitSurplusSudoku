@@ -1,6 +1,6 @@
 const requestedVersion = new URLSearchParams(window.location.search).get('version');
 const baseVariant = document.body.dataset.variant ?? 'deficit';
-const variant = baseVariant === 'deficit' && ['2', '3', '4', '5'].includes(requestedVersion) ? `deficit${requestedVersion}` : baseVariant === 'surplus' && ['2', '3'].includes(requestedVersion) ? `surplus${requestedVersion}` : baseVariant;
+const variant = baseVariant === 'deficit' && ['2', '3', '4', '5'].includes(requestedVersion) ? `deficit${requestedVersion}` : baseVariant === 'surplus' && ['2', '3', '4'].includes(requestedVersion) ? `surplus${requestedVersion}` : baseVariant;
 
 const variants = {
   deficit: {
@@ -62,6 +62,18 @@ const variants = {
       return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 10]));
     },
     requiresRegionCoverage: false, maxPerUnit: 1,
+  },
+  surplus4: {
+    name: 'Surplus Sudoku V4', size: 4, numbers: [1,2,3],
+    regions: Array.from({length:4}, (_, row) => Array.from({length:4}, (_, col) => Math.floor(row / 2) * 2 + Math.floor(col / 2) + 1)),
+    generate() {
+      const shifts = [0,2,1,3];
+      const rows = shuffled([[0,1],[2,3]]).flatMap(shuffled);
+      const cols = shuffled([[0,1],[2,3]]).flatMap(shuffled);
+      const digits = shuffled(this.numbers);
+      return rows.map(row => cols.map(col => digits[(col + shifts[row]) % 3]));
+    },
+    requiresRegionCoverage: true, maxPerUnit: 2,
   },
   surplus3: {
     name: 'Surplus Sudoku V3', size: 6, numbers: [1,2,3,4,5],
@@ -128,12 +140,12 @@ if (['deficit2', 'deficit3', 'deficit4', 'deficit5'].includes(variant)) {
   document.querySelector(`#version-${version}`)?.classList.add('active');
 }
 
-if (['surplus2', 'surplus3'].includes(variant)) {
+if (['surplus2', 'surplus3', 'surplus4'].includes(variant)) {
   const version = variant.slice(-1);
   document.title = `Generate · Surplus Sudoku V${version}`;
   document.querySelector('#version-eyebrow').textContent = `SURPLUS V${version} · 0${config.size} × 0${config.size}`;
   document.querySelector('#title').innerHTML = `Surplus<br /><em>Sudoku V${version}</em>`;
-  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 9×9 grid with nine 3×3 regions. Each row, column, and region contains every digit from 1–8 at least once.' : 'A 6×6 grid with six 2×3 regions. Each row, column, and region contains every digit from 1–5 at least once.';
+  document.querySelector('#variant-intro').textContent = version === '2' ? 'A 9×9 grid with nine 3×3 regions. Each row, column, and region contains every digit from 1–8 at least once.' : version === '3' ? 'A 6×6 grid with six 2×3 regions. Each row, column, and region contains every digit from 1–5 at least once.' : 'A 4×4 grid with four 2×2 regions. Each row, column, and region contains every digit from 1–3 at least once.';
   document.querySelector('#completed-dimensions').textContent = `${config.size} × ${config.size}`;
   finalBoard.setAttribute('aria-label', `Final Surplus Sudoku V${version} puzzle`);
   completedBoard.setAttribute('aria-label', `Completed Surplus Sudoku V${version} solution`);

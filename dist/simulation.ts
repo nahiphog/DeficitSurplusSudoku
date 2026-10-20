@@ -4,6 +4,7 @@ const configurations = {
   surplus: { size: 8, numbers: [1,2,3,4,5,6,7], regions: Array.from({length:8},(_,r)=>Array.from({length:8},(_,c)=>Math.floor(r/2)*2+Math.floor(c/4)+1)), limit: 2, coverRegions: true },
   surplus2: { size: 9, numbers: [1,2,3,4,5,6,7,8], regions: Array.from({length:9},(_,r)=>Array.from({length:9},(_,c)=>Math.floor(r/3)*3+Math.floor(c/3)+1)), limit: 2, coverRegions: true },
   surplus3: { size: 6, numbers: [1,2,3,4,5], regions: Array.from({length:6},(_,r)=>Array.from({length:6},(_,c)=>Math.floor(r/2)*2+Math.floor(c/3)+1)), limit: 2, coverRegions: true },
+  surplus4: { size: 4, numbers: [1,2,3], regions: Array.from({length:4},(_,r)=>Array.from({length:4},(_,c)=>Math.floor(r/2)*2+Math.floor(c/2)+1)), limit: 2, coverRegions: true },
   deficit: { size: 7, numbers: [1,2,3,4,5,6,7], regions: [[1,1,2,2,3,3,3],[1,1,2,2,3,3,3],[1,1,2,2,4,4,4],[5,5,5,9,4,4,4],[5,5,5,7,7,8,8],[6,6,6,7,7,8,8],[6,6,6,7,7,8,8]], limit: 1, coverRegions: false },
   deficit2: {size:6, numbers:[1,2,3,4,5,6,7], regions:Array.from({length:6},(_,r)=>Array.from({length:6},(_,c)=>Math.floor(r/2)*2+Math.floor(c/3)+1)), limit:1, coverRegions:false},
   deficit3: {size:8, numbers:[1,2,3,4,5,6,7,8,9], regions:Array.from({length:8},(_,r)=>Array.from({length:8},(_,c)=>Math.floor(r/2)*2+Math.floor(c/4)+1)), limit:1, coverRegions:false},
@@ -39,7 +40,7 @@ function countSolutions(puzzle, max=2) {
   search(state.filled); return found;
 }
 function completedGrid() {
-  if(settings.size===4){const shifts=[0,2,1,3],rows=shuffled([[0,1],[2,3]]).flatMap(shuffled),cols=shuffled([[0,1],[2,3]]).flatMap(shuffled),digits=shuffled(settings.numbers);return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%5]));}
+  if(settings.size===4){const shifts=[0,2,1,3],rows=shuffled([[0,1],[2,3]]).flatMap(shuffled),cols=shuffled([[0,1],[2,3]]).flatMap(shuffled),digits=shuffled(settings.numbers);return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%digits.length]));}
   if(settings.size===9){const shifts=[0,3,6,1,4,7,2,5,8], rows=shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled), cols=shuffled([[0,1,2],[3,4,5],[6,7,8]]).flatMap(shuffled), digits=shuffled(settings.numbers);return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%digits.length]));}
   if(settings.size===6 || settings.size===8){const six=settings.size===6, shifts=six?[0,3,1,4,2,5]:[0,4,1,5,2,6,3,7], rows=shuffled(six?[[0,1],[2,3],[4,5]]:[[0,1],[2,3],[4,5],[6,7]]).flatMap(shuffled), cols=shuffled(six?[[0,1,2],[3,4,5]]:[[0,1,2,3],[4,5,6,7]]).flatMap(shuffled), digits=shuffled(settings.numbers);return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%digits.length]));}
   const grid=Array.from({length:7},()=>Array(7).fill(null)),state=stateFor(grid,false);function search(filled){if(filled===49)return true;let target,options=[];for(let r=0;r<7;r+=1)for(let c=0;c<7;c+=1){if(grid[r][c]!==null)continue;const choices=shuffled(settings.numbers.filter(v=>state.allowed(r,c,v)));if(!target||choices.length<options.length){target=[r,c];options=choices;}if(options.length<=1)break;}if(!target||!options.length)return false;const[r,c]=target;for(const v of options){state.set(r,c,v,1);if(search(filled+1))return true;state.set(r,c,v,-1);}return false;}if(!search(0))throw new Error('Could not generate a completed grid.');return grid;

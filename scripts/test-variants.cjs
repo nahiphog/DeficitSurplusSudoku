@@ -14,6 +14,23 @@ function context(source, version, simulation = false, variant = 'deficit') {
   return sandbox;
 }
 for (const simulation of [false, true]) {
+  const ctx = context(simulation ? 'src/simulation.ts' : 'src/app.ts', 4, simulation, 'surplus');
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const grid = vm.runInContext(simulation ? 'completedGrid()' : 'config.generate()', ctx);
+    assert.equal(grid.length, 4);
+    const units = [...grid, ...Array.from({length:4}, (_,c)=>grid.map(row=>row[c]))];
+    for(let r=0;r<4;r+=2) for(let c=0;c<4;c+=2) units.push(grid.slice(r,r+2).flatMap(row=>row.slice(c,c+2)));
+    for(const unit of units) { assert.equal(unit.length, 4); assert.deepEqual([...new Set(unit)].sort(), [1,2,3]); }
+    ctx.board = grid;
+    assert.equal(vm.runInContext('countSolutions(board)', ctx), 1);
+    for(const method of ['digSingle','digDual']) {
+      ctx.puzzle = vm.runInContext(`${method}(board.map(row => [...row]))`, ctx);
+      assert.equal(vm.runInContext('countSolutions(puzzle)', ctx), 1);
+    }
+  }
+  console.log(`Surplus V4 ${simulation ? 'simulation' : 'generation'}: valid and unique`);
+}
+for (const simulation of [false, true]) {
   const ctx = context(simulation ? 'src/simulation.ts' : 'src/app.ts', 2, simulation, 'surplus');
   const grid = vm.runInContext(simulation ? 'completedGrid()' : 'config.generate()', ctx);
   const units = [...grid, ...Array.from({length:9}, (_,c)=>grid.map(row=>row[c]))];

@@ -8,6 +8,7 @@ const configs = {
   surplus: [8, [1,2,3,4,5,6,7], regions(8,2,4), true],
   surplus2: [9, [1,2,3,4,5,6,7,8], regions(9,3,3), true],
   surplus3: [6, [1,2,3,4,5], regions(6,2,3), true],
+  surplus4: [4, [1,2,3], regions(4,2,2), true],
 };
 function regions(size, height, width) { return Array.from({length:size}, (_,r) => Array.from({length:size}, (_,c) => Math.floor(r/height)*(size/width)+Math.floor(c/width)+1)); }
 function shuffle(items) { const a=[...items]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }

@@ -13,7 +13,7 @@ const rectangular = (size,h,w) => Array.from({length:size},(_,r)=>Array.from({le
 const configs = {
   deficit: {size:7,regions:[[1,1,2,2,3,3,3],[1,1,2,2,3,3,3],[1,1,2,2,4,4,4],[5,5,5,9,4,4,4],[5,5,5,7,7,8,8],[6,6,6,7,7,8,8],[6,6,6,7,7,8,8]]},
   deficit2: {size:6,regions:rectangular(6,2,3)}, deficit3: {size:8,regions:rectangular(8,2,4)}, deficit4: {size:9,regions:rectangular(9,3,3)}, deficit5: {size:4,regions:rectangular(4,2,2)},
-  surplus: {size:8,regions:rectangular(8,2,4)}, surplus2: {size:9,regions:rectangular(9,3,3)}, surplus3: {size:6,regions:rectangular(6,2,3)},
+  surplus: {size:8,regions:rectangular(8,2,4)}, surplus2: {size:9,regions:rectangular(9,3,3)}, surplus3: {size:6,regions:rectangular(6,2,3)}, surplus4: {size:4,regions:rectangular(4,2,2)},
 };
 let selected=new Set(), worker=null, latest=null, attempts=0;
 function config(){return configs[selector.value];}
