@@ -1,4 +1,5 @@
 // Custom pattern search runs off the UI thread so even difficult searches can be halted.
+importScripts('./techniques.js');
 const configs = {
   deficit: [7, [1,2,3,4,5,6,7], [[1,1,2,2,3,3,3],[1,1,2,2,3,3,3],[1,1,2,2,4,4,4],[5,5,5,9,4,4,4],[5,5,5,7,7,8,8],[6,6,6,7,7,8,8],[6,6,6,7,7,8,8]], false],
   deficit2: [6, [1,2,3,4,5,6,7], regions(6,2,3), false],
@@ -40,7 +41,13 @@ function completed(cfg) {
   return rows.map(r=>cols.map(c=>digits[(c+shifts[r])%digits.length]));
 }
 self.onmessage = event => {
-  const {variant, selected}=event.data, cfg=configs[variant], chosen=new Set(selected); let attempts=0;
+  const {variant, selected, action, puzzle}=event.data, cfg=configs[variant];
+  if (action === 'verify') {
+    try { const solutions=solve(puzzle,cfg,2); const walkthrough=solutions.length===1 ? singleWalkthrough(puzzle,cfg) : null; self.postMessage({type:'verified',count:solutions.length,solution:solutions[0] || null,walkthrough}); }
+    catch(error) { self.postMessage({type:'error',message:String(error)}); }
+    return;
+  }
+  const chosen=new Set(selected); let attempts=0;
   try { for(;;) { attempts++; const solution=completed(cfg); const puzzle=solution.map((row,r)=>row.map((v,c)=>chosen.has(r*cfg[0]+c)?v:null));
     if(solve(puzzle,cfg,2).length===1){self.postMessage({type:'found',puzzle,solution,attempts});return;}
     if(attempts%10===0)self.postMessage({type:'progress',attempts});

@@ -10,6 +10,7 @@ function context(source, version, simulation = false, variant = 'deficit') {
   const cutoff = simulation ? "runButton.addEventListener('click'" : "button.addEventListener('click'";
   const code = fs.readFileSync(source, 'utf8').split(cutoff)[0];
   vm.createContext(sandbox);
+  if (!simulation) vm.runInContext(fs.readFileSync('src/techniques.ts', 'utf8'), sandbox);
   vm.runInContext(code + (simulation ? `\nsettings = configurations.${version === 1 ? variant : `${variant}${version}`};` : ''), sandbox);
   return sandbox;
 }
@@ -60,6 +61,14 @@ for (const simulation of [false, true]) {
     }
   }
   console.log(`Surplus V3 ${simulation ? 'simulation' : 'generation'}: valid and unique`);
+}
+for (const [variant, versions] of [['deficit',[1,2,3,4,5]],['surplus',[1,2,3,4]]]) {
+  for (const version of versions) {
+    const ctx=context('src/app.ts',version,false,variant);
+    vm.runInContext('var solution=config.generate(); var puzzle=digSingle(solution); var steps=walkthroughSteps(puzzle,solution); var replay=puzzle.map(row=>[...row]); for(const s of steps){if(replay[s.row][s.col]!==null || solution[s.row][s.col]!==s.value) throw Error("Invalid step"); replay[s.row][s.col]=s.value;}',ctx);
+    assert.equal(vm.runInContext('JSON.stringify(replay)===JSON.stringify(solution)',ctx),true,`${variant} V${version} walkthrough`);
+    console.log(`${variant} V${version}: walkthrough reaches verified solution`);
+  }
 }
 function validate(grid, size, regionWidth, digits, minimum = 1) {
   assert.equal(grid.length, size);

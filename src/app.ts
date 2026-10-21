@@ -299,6 +299,69 @@ function draw(targetBoard, grid, isFinal, finalGrid = null) {
   }
 }
 
+function walkthroughSteps(puzzle, solution) {
+  const result = singleWalkthrough(puzzle, [config.size, config.numbers, config.regions, config.requiresRegionCoverage]);
+  const board = puzzle.map(row => [...row]);
+  const steps = [];
+  for (const step of result.steps) {
+    if (board[step.row][step.col] !== null || solution[step.row][step.col] !== step.value) throw new Error('Invalid logical walkthrough step.');
+    board[step.row][step.col] = step.value;
+    steps.push(step);
+  }
+  // The completed grid is already known to be the unique solution. When the
+  // current logical subset is exhausted, disclose that we use that solution.
+  for (let row=0;row<config.size;row++) for(let col=0;col<config.size;col++) if(board[row][col]===null){
+    const value=solution[row][col];
+    steps.push({technique:'Solver fallback',row,col,value,reason:'the supported logical techniques stopped; this value comes from the uniquely verified solution'});
+    board[row][col]=value;
+  }
+  return steps;
+}
+
+function mountWalkthrough(puzzle, solution) {
+  const host=document.querySelector('#walkthrough-host');
+  if(!host)return;
+  host.replaceChildren();
+  let steps;
+  try { steps=walkthroughSteps(puzzle,solution); } catch { host.textContent='A validated walkthrough is unavailable for this puzzle.';return; }
+  let current=0;
+  const title=document.createElement('h2');title.textContent='Solution walkthrough';
+  const note=document.createElement('p');note.className='walkthrough-note';
+  const fallback=steps.filter(step=>step.technique==='Solver fallback').length;
+  note.textContent=fallback?`${fallback} step${fallback===1?' uses':'s use'} the uniquely verified solution after the supported logical techniques stop.`:'All steps use the supported logical techniques.';
+  const board=document.createElement('div');board.className='board walkthrough-board';board.setAttribute('role','grid');board.setAttribute('aria-label','Solution walkthrough grid');
+  const description=document.createElement('p');description.className='walkthrough-description';description.setAttribute('aria-live','polite');
+  const slider=document.createElement('input');slider.type='range';slider.min='0';slider.max=String(steps.length);slider.value='0';slider.setAttribute('aria-label','Walkthrough step');slider.className='walkthrough-slider';slider.disabled=steps.length===0;
+  const controls=document.createElement('div');controls.className='walkthrough-controls';
+  const counter=document.createElement('span');counter.className='step-counter';
+  const buttons=[];
+  function render(){
+    const state=puzzle.map(row=>[...row]);for(let i=0;i<current;i++){const step=steps[i];state[step.row][step.col]=step.value;}
+    board.replaceChildren();board.style.setProperty('--board-size',String(config.size));
+    for(let row=0;row<config.size;row++)for(let col=0;col<config.size;col++){
+      const cell=document.createElement('div'),value=state[row][col],region=config.regions[row][col];
+      const right=col===config.size-1||config.regions[row][col+1]!==region,bottom=row===config.size-1||config.regions[row+1][col]!==region;
+      const last=current>0?steps[current-1]:null;
+      cell.className=`cell ${right?'edge-right':''} ${bottom?'edge-bottom':''} ${value!==null?(puzzle[row][col]!==null?'walk-given':'walk-solved'):'walk-candidates'} ${last&&last.row===row&&last.col===col?'walk-current':''}`;
+      cell.setAttribute('role','gridcell');
+      if(value!==null){cell.textContent=String(value);cell.setAttribute('aria-label',`Row ${row+1}, column ${col+1}: ${value}`);}
+      else {
+        const unit=makeUnitState(state,false),choices=config.numbers.filter(v=>unit.allowed(row,col,v));
+        for(const digit of choices){const mark=document.createElement('span');mark.textContent=String(digit);cell.append(mark);}
+        cell.setAttribute('aria-label',`Row ${row+1}, column ${col+1}: empty; candidates ${choices.join(', ')||'none'}`);
+      }
+      board.append(cell);
+    }
+    const step=current?steps[current-1]:null;
+    description.textContent=step?`${step.technique}: R${step.row+1}C${step.col+1} = ${step.value} — ${step.reason}.`:'Step 0: the starting puzzle and its currently allowed candidates.';
+    slider.value=String(current);counter.textContent=`Step ${current} of ${steps.length}`;
+    buttons[0].disabled=buttons[1].disabled=current===0;buttons[2].disabled=buttons[3].disabled=current===steps.length;
+  }
+  [['First',()=>0],['Previous',()=>Math.max(0,current-1)],['Next',()=>Math.min(steps.length,current+1)],['Last',()=>steps.length]].forEach(([label,target])=>{const control=document.createElement('button');control.type='button';control.className='secondary-button';control.textContent=label;control.addEventListener('click',()=>{current=target();render();});buttons.push(control);controls.append(control);});
+  slider.addEventListener('input',()=>{current=Number(slider.value);render();});
+  host.append(title,note,board,description,slider,controls,counter);render();
+}
+
 let currentFinal = null, currentCompleted = null;
 function gridString(grid) { return grid.flat().map(value => value === null ? '.' : String(value)).join(''); }
 async function copyGrid(grid, label) {
@@ -311,6 +374,7 @@ document.querySelector('#copy-completed')?.addEventListener('click', () => copyG
 
 function refresh() {
   button.disabled = true; status.textContent = 'Searching the constraint space…';
+  document.querySelector('#walkthrough-host')?.replaceChildren();
   requestAnimationFrame(() => {
     const startedAt = performance.now(); const completed = config.generate();
     const method = diggingMethod.value; const final = method === 'dual' ? digDual(completed) : digSingle(completed);
@@ -321,6 +385,7 @@ function refresh() {
     clueCount.textContent = `${clues} CLUES`;
     timing.textContent = `Generated and ${method === 'dual' ? 'dual-cell' : 'single-cell'} dug in ${elapsed.toFixed(1)} ms`;
     status.textContent = `Ready — ${method === 'dual' ? 'rotationally symmetric ' : ''}final grid has ${clues} clues and one solution.`;
+    mountWalkthrough(final, completed);
     button.disabled = false;
   });
 }
