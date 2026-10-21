@@ -67,8 +67,15 @@ for (const [variant, versions] of [['deficit',[1,2,3,4,5]],['surplus',[1,2,3,4]]
     const ctx=context('src/app.ts',version,false,variant);
     vm.runInContext('var solution=config.generate(); var puzzle=digSingle(solution); var steps=walkthroughSteps(puzzle,solution); var replay=puzzle.map(row=>[...row]); for(const s of steps){if(replay[s.row][s.col]!==null || solution[s.row][s.col]!==s.value) throw Error("Invalid step"); replay[s.row][s.col]=s.value;}',ctx);
     assert.equal(vm.runInContext('JSON.stringify(replay)===JSON.stringify(solution)',ctx),true,`${variant} V${version} walkthrough`);
+    assert.equal(vm.runInContext('[...tallyWalkthrough(steps).values()].flat().length===steps.length',ctx),true,`${variant} V${version} tally`);
+    assert.equal(vm.runInContext('[...tallyWalkthrough(steps)].every(([name,indices])=>indices.every(i=>steps[i-1].technique===name))',ctx),true,`${variant} V${version} tally indices`);
     console.log(`${variant} V${version}: walkthrough reaches verified solution`);
   }
+}
+{
+  const ctx=context('src/app.ts',5,false,'deficit');
+  assert.equal(vm.runInContext('tallyWalkthrough([]).size',ctx),0);
+  assert.equal(vm.runInContext('JSON.stringify([...tallyWalkthrough([{technique:"Naked Single"},{technique:"Solver fallback"},{technique:"Naked Single"}])])',ctx),'[["Naked Single",[1,3]],["Solver fallback",[2]]]');
 }
 function validate(grid, size, regionWidth, digits, minimum = 1) {
   assert.equal(grid.length, size);

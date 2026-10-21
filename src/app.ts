@@ -318,6 +318,15 @@ function walkthroughSteps(puzzle, solution) {
   return steps;
 }
 
+function tallyWalkthrough(steps) {
+  const tally = new Map();
+  steps.forEach((step,index) => {
+    if (!tally.has(step.technique)) tally.set(step.technique, []);
+    tally.get(step.technique).push(index + 1);
+  });
+  return tally;
+}
+
 function mountWalkthrough(puzzle, solution) {
   const host=document.querySelector('#walkthrough-host');
   if(!host)return;
@@ -329,6 +338,18 @@ function mountWalkthrough(puzzle, solution) {
   const note=document.createElement('p');note.className='walkthrough-note';
   const fallback=steps.filter(step=>step.technique==='Solver fallback').length;
   note.textContent=fallback?`${fallback} step${fallback===1?' uses':'s use'} the uniquely verified solution after the supported logical techniques stop.`:'All steps use the supported logical techniques.';
+  const tallyTable=document.createElement('table');tallyTable.className='walkthrough-tally';
+  const caption=document.createElement('caption');caption.textContent='Technique tally';tallyTable.append(caption);
+  const head=document.createElement('thead'),headRow=document.createElement('tr');
+  for(const label of ['Technique','Count','Steps']){const th=document.createElement('th');th.scope='col';th.textContent=label;headRow.append(th);}head.append(headRow);tallyTable.append(head);
+  const body=document.createElement('tbody');
+  for(const [technique,indices] of tallyWalkthrough(steps)){
+    const row=document.createElement('tr');
+    for(const value of [technique,String(indices.length),indices.join(', ')]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}
+    body.append(row);
+  }
+  if(!steps.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=3;cell.textContent='No placements needed.';row.append(cell);body.append(row);}
+  tallyTable.append(body);
   const board=document.createElement('div');board.className='board walkthrough-board';board.setAttribute('role','grid');board.setAttribute('aria-label','Solution walkthrough grid');
   const description=document.createElement('p');description.className='walkthrough-description';description.setAttribute('aria-live','polite');
   const slider=document.createElement('input');slider.type='range';slider.min='0';slider.max=String(steps.length);slider.value='0';slider.setAttribute('aria-label','Walkthrough step');slider.className='walkthrough-slider';slider.disabled=steps.length===0;
@@ -359,7 +380,7 @@ function mountWalkthrough(puzzle, solution) {
   }
   [['First',()=>0],['Previous',()=>Math.max(0,current-1)],['Next',()=>Math.min(steps.length,current+1)],['Last',()=>steps.length]].forEach(([label,target])=>{const control=document.createElement('button');control.type='button';control.className='secondary-button';control.textContent=label;control.addEventListener('click',()=>{current=target();render();});buttons.push(control);controls.append(control);});
   slider.addEventListener('input',()=>{current=Number(slider.value);render();});
-  host.append(title,note,board,description,slider,controls,counter);render();
+  host.append(title,note,tallyTable,board,description,slider,controls,counter);render();
 }
 
 let currentFinal = null, currentCompleted = null;
