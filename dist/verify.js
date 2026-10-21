@@ -26,9 +26,9 @@ function showWalkthrough(result) {
   walkthrough.replaceChildren();
   if(!result)return;
   const heading=document.createElement('h2');heading.textContent='Logical solving steps';
-  const summary=document.createElement('p');summary.textContent=result.solved?'Solved using Full House, Naked Single and Hidden Single.':`Stopped after ${result.steps.length} step${result.steps.length===1?'':'s'}: no further single was found. Other techniques are not yet supported.`;
+  const summary=document.createElement('p');summary.textContent=result.solved?'Solved using the supported logical techniques.':`Stopped after ${result.steps.length} step${result.steps.length===1?'':'s'}: no further supported logical step was found.`;
   walkthrough.append(heading,summary);
-  if(result.steps.length){const list=document.createElement('ol');for(const step of result.steps){const item=document.createElement('li');item.textContent=`${step.technique}: R${step.row+1}C${step.col+1} = ${step.value} — ${step.reason}.`;list.append(item);}walkthrough.append(list);}
+  if(result.steps.length){const list=document.createElement('ol');for(const step of result.steps){const item=document.createElement('li');item.textContent=`${step.technique}: ${step.eliminations?step.eliminations.map(({row,col,value})=>`remove ${value} from R${row+1}C${col+1}`).join(', '):`R${step.row+1}C${step.col+1} = ${step.value}`} — ${step.reason}.`;list.append(item);}walkthrough.append(list);}
 }
 function draw(board, version) {
   const [size] = dimensions[version];

@@ -65,7 +65,7 @@ for (const simulation of [false, true]) {
 for (const [variant, versions] of [['deficit',[1,2,3,4,5]],['surplus',[1,2,3,4]]]) {
   for (const version of versions) {
     const ctx=context('src/app.ts',version,false,variant);
-    vm.runInContext('var solution=config.generate(); var puzzle=digSingle(solution); var steps=walkthroughSteps(puzzle,solution); var replay=puzzle.map(row=>[...row]); for(const s of steps){if(replay[s.row][s.col]!==null || solution[s.row][s.col]!==s.value) throw Error("Invalid step"); replay[s.row][s.col]=s.value;}',ctx);
+    vm.runInContext('var solution=config.generate(); var puzzle=digSingle(solution); var steps=walkthroughSteps(puzzle,solution); var replay=puzzle.map(row=>[...row]); for(const s of steps){if(s.eliminations){for(const e of s.eliminations)if(replay[e.row][e.col]!==null||solution[e.row][e.col]===e.value)throw Error("Invalid elimination");continue;}if(replay[s.row][s.col]!==null || solution[s.row][s.col]!==s.value) throw Error("Invalid step"); replay[s.row][s.col]=s.value;}',ctx);
     assert.equal(vm.runInContext('JSON.stringify(replay)===JSON.stringify(solution)',ctx),true,`${variant} V${version} walkthrough`);
     assert.equal(vm.runInContext('[...tallyWalkthrough(steps).values()].flat().length===steps.length',ctx),true,`${variant} V${version} tally`);
     assert.equal(vm.runInContext('[...tallyWalkthrough(steps)].every(([name,indices])=>indices.every(i=>steps[i-1].technique===name))',ctx),true,`${variant} V${version} tally indices`);

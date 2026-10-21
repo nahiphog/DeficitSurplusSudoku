@@ -304,6 +304,10 @@ function walkthroughSteps(puzzle, solution) {
   const board = puzzle.map(row => [...row]);
   const steps = [];
   for (const step of result.steps) {
+    if(step.eliminations){
+      if(step.eliminations.some(({row,col,value})=>board[row][col]!==null||solution[row][col]===value))throw new Error('Invalid logical elimination.');
+      steps.push(step);continue;
+    }
     if (board[step.row][step.col] !== null || solution[step.row][step.col] !== step.value) throw new Error('Invalid logical walkthrough step.');
     board[step.row][step.col] = step.value;
     steps.push(step);
@@ -357,24 +361,26 @@ function mountWalkthrough(puzzle, solution) {
   const counter=document.createElement('span');counter.className='step-counter';
   const buttons=[];
   function render(){
-    const state=puzzle.map(row=>[...row]);for(let i=0;i<current;i++){const step=steps[i];state[step.row][step.col]=step.value;}
+    const state=puzzle.map(row=>[...row]);
+    const excluded=Array.from({length:config.size},()=>Array.from({length:config.size},()=>new Set()));
+    for(let i=0;i<current;i++){const step=steps[i];if(step.eliminations){for(const {row,col,value} of step.eliminations)excluded[row][col].add(value);}else state[step.row][step.col]=step.value;}
     board.replaceChildren();board.style.setProperty('--board-size',String(config.size));
     for(let row=0;row<config.size;row++)for(let col=0;col<config.size;col++){
       const cell=document.createElement('div'),value=state[row][col],region=config.regions[row][col];
       const right=col===config.size-1||config.regions[row][col+1]!==region,bottom=row===config.size-1||config.regions[row+1][col]!==region;
       const last=current>0?steps[current-1]:null;
-      cell.className=`cell ${right?'edge-right':''} ${bottom?'edge-bottom':''} ${value!==null?(puzzle[row][col]!==null?'walk-given':'walk-solved'):'walk-candidates'} ${last&&last.row===row&&last.col===col?'walk-current':''}`;
+      cell.className=`cell ${right?'edge-right':''} ${bottom?'edge-bottom':''} ${value!==null?(puzzle[row][col]!==null?'walk-given':'walk-solved'):'walk-candidates'} ${last&&((last.row===row&&last.col===col)||last.eliminations?.some(item=>item.row===row&&item.col===col))?'walk-current':''}`;
       cell.setAttribute('role','gridcell');
       if(value!==null){cell.textContent=String(value);cell.setAttribute('aria-label',`Row ${row+1}, column ${col+1}: ${value}`);}
       else {
-        const unit=makeUnitState(state,false),choices=config.numbers.filter(v=>unit.allowed(row,col,v));
+        const unit=makeUnitState(state,false),choices=config.numbers.filter(v=>unit.allowed(row,col,v)&&!excluded[row][col].has(v));
         for(const digit of choices){const mark=document.createElement('span');mark.textContent=String(digit);cell.append(mark);}
         cell.setAttribute('aria-label',`Row ${row+1}, column ${col+1}: empty; candidates ${choices.join(', ')||'none'}`);
       }
       board.append(cell);
     }
     const step=current?steps[current-1]:null;
-    description.textContent=step?`${step.technique}: R${step.row+1}C${step.col+1} = ${step.value} — ${step.reason}.`:'Step 0: the starting puzzle and its currently allowed candidates.';
+    description.textContent=step?`${step.technique}: ${step.eliminations?step.eliminations.map(({row,col,value})=>`remove ${value} from R${row+1}C${col+1}`).join(', '):`R${step.row+1}C${step.col+1} = ${step.value}`} — ${step.reason}.`:'Step 0: the starting puzzle and its currently allowed candidates.';
     slider.value=String(current);counter.textContent=`Step ${current} of ${steps.length}`;
     buttons[0].disabled=buttons[1].disabled=current===0;buttons[2].disabled=buttons[3].disabled=current===steps.length;
   }

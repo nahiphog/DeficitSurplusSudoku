@@ -4,6 +4,15 @@ const assert = require('node:assert/strict');
 const sandbox = { Math, self: { postMessage(message) { sandbox.messages.push(message); } }, messages: [] };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync('src/techniques.ts', 'utf8'), sandbox);
+for(const n of [2,3,4]) {
+  sandbox.n=n;
+  const naked=vm.runInContext(`(()=>{const digits=Array.from({length:n+2},(_,i)=>i+1),board=[Array(n+1).fill(null)],unit={name:'test',cells:board[0].map((_,i)=>[0,i])};const candidates=(_,c)=>c<n?digits.slice(0,n):[1,n+1];return findSubsetStep([unit],board,digits,candidates,false);})()`,sandbox);
+  assert.equal(naked.technique,`Naked ${['','','Pair','Triple','Quadruple'][n]}`);
+  assert.equal(naked.eliminations[0].value,1);
+  const hidden=vm.runInContext(`(()=>{const digits=Array.from({length:2*n+1},(_,i)=>i+1),board=[Array(digits.length).fill(null)],unit={name:'test',cells:board[0].map((_,i)=>[0,i])};const candidates=(_,c)=>c<n?digits:digits.slice(n);return findSubsetStep([unit],board,digits,candidates,false);})()`,sandbox);
+  assert.equal(hidden.technique,`Hidden ${['','','Pair','Triple','Quadruple'][n]}`);
+  assert.equal(vm.runInContext(`(()=>{const board=[[null,null,null]],unit={name:'test',cells:[[0,0],[0,1],[0,2]]};return findSubsetStep([unit],board,[1,2,3],(_,c)=>c<2?[1,2]:[1,3],true);})()`,sandbox),null);
+}
 sandbox.importScripts = () => {};
 vm.runInContext(fs.readFileSync('src/custom-worker.ts', 'utf8'), sandbox);
 for (const variant of ['deficit','deficit2','deficit3','deficit4','deficit5','surplus','surplus2','surplus3','surplus4']) {
@@ -24,6 +33,10 @@ for (const variant of ['deficit','deficit2','deficit3','deficit4','deficit5','su
     const steps=vm.runInContext('walk.steps',sandbox);
     for(const step of steps) {
       sandbox.step=step;
+      if(step.eliminations){
+        for(const elimination of step.eliminations){sandbox.elimination=elimination;assert.equal(vm.runInContext('var check=partial.map(row=>[...row]);check[elimination.row][elimination.col]=elimination.value;solve(check,cfg,1).length',sandbox),0,`${variant} ${step.technique} elimination`);}
+        continue;
+      }
       assert.equal(step.value,vm.runInContext('board[step.row][step.col]',sandbox),`${variant} step matches solution`);
       const alternatives=vm.runInContext('cfg[1].filter(v=>v!==step.value)',sandbox);
       for(const alternative of alternatives){sandbox.alternative=alternative;assert.equal(vm.runInContext('var check=partial.map(row=>[...row]);check[step.row][step.col]=alternative;solve(check,cfg,1).length',sandbox),0,`${variant} ${step.technique} excludes alternatives`);}
